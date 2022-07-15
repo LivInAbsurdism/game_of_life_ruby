@@ -15,18 +15,31 @@ class Game
     end
 
     def tick!
+        next_round_live_cells = []
+        next_round_dead_cells = []
         # Rule 1
         world.cells.each do |cell|
-            if cell.alive? && world.live_neighbors_around_cell(cell).count < 2
-                cell.die!
-            end
-            
-            # if cell.alive? && world.live_neighbors_around_cell(cell).count >
-
+            # rule 1
+            # Any live cell with fewer than two live neighbours dies
+            next_round_dead_cells.push(cell) if cell.alive? and world.live_neighbors_around_cell(cell).count < 2
+            # rule 2
+             # Any live cell with two or three live neighbours lives on to the next generation
+             next_round_live_cells.push(cell) if cell.alive? && ([2, 3].include?(world.live_neighbors_around_cell(cell).count))
+             # rule 3
+             # Any live cell with more than three live neighbours dies
+            next_round_dead_cells.push(cell) if cell.alive? && world.live_neighbors_around_cell(cell).count > 3
+            # rule 4
+            # Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction
+            next_round_live_cells.push(cell) if cell.alive? && world.live_neighbors_around_cell(cell).count == 3
         end
 
-        # Rule 2
-        # TODO: implement other 3 rules
+        next_round_live_cells.each do |cell| 
+            cell.revive!
+        end
+
+        next_round_dead_cells.each do |cell|
+            cell.die!
+        end
     end
 end
 
@@ -58,7 +71,7 @@ class World
         live_neighbors = []
 
         # it detects a neighbor to the north
-        if cell.y > 0  # y can be 1 or 2
+        if cell.y > 0  # y can be 0 or 1
             candidate = self.cell_grid[cell.y - 1][cell.x]
             live_neighbors.push(candidate) if candidate.alive? 
         end
@@ -106,6 +119,14 @@ class World
 
         live_neighbors
     end
+
+    def live_cells
+      cells.select { |cell| cell.alive }
+    end
+    
+    def dead_cells
+      cells.select { |cell| cell.alive == false }
+    end
 end
 
 class Cell
@@ -127,6 +148,10 @@ class Cell
 
     def die!
        @alive = false
+    end
+
+    def revive!  
+        @alive = true
     end
 end
 
